@@ -189,6 +189,7 @@ def change_color(hunter):
 
 
 if __name__ == '__main__':
+
     create_env()
 
     hunter_1 = Hunter((12, 3), 30, color='red').create_hunter()
