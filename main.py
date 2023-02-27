@@ -4,7 +4,7 @@ from datetime import datetime
 
 win = tk.Tk()
 win.geometry('700x600')
-win.title('恐惧学习')
+win.title('fear_learning')
 canvas = tk.Canvas(win, bg='white', height=600, width=600)
 canvas.grid(column=0, row=0)
 
@@ -27,8 +27,8 @@ def create_env():
 
 # 机器人模块
 class Robot:
-    FEAR_MEMORY = {}
-    SENSORY_MEMORY = {}
+    FEAR_MEMORY = {}  # 恐惧记忆
+    SENSORY_MEMORY = {}  # 感觉记忆
 
     def __init__(self, column, row):  # 列，行
         self.points = [10, 10, 25, 10, 25, -15, 25, 10, 40, 10, 40, 25, 65, 25, 40, 25, 40, 40, 25, 40, 25, 65, 25, 40,
@@ -66,13 +66,13 @@ class Robot:
         # 获取当前时间
         now = (time.time())
 
-        # 感觉记忆的保留时间为2秒，如果大于2秒则删除感觉记忆
-        Robot.SENSORY_MEMORY = {key: value for key, value in Robot.SENSORY_MEMORY.items() if now - key < 2}
-
         # 将感知的事物添加进感觉记忆
         Robot.SENSORY_MEMORY[now] = perception
 
-        print('感觉记忆：', Robot.SENSORY_MEMORY)
+        # 感觉记忆的保留时间为2秒，如果大于2秒则删除感觉记忆
+        Robot.SENSORY_MEMORY = {key: value for key, value in Robot.SENSORY_MEMORY.items() if now - key < 2}
+
+        print('sensory_memory：', Robot.SENSORY_MEMORY)
 
     # 恐惧记忆提取模块
     @staticmethod
@@ -127,6 +127,27 @@ class Robot:
     def run(robot):
         canvas.move(robot, -100, 0)
 
+    @staticmethod
+    def brain(robot, hunter):
+        perception_result = Robot.perception(robot, hunter)  # 感知到的信息
+
+        # 信息流动的第一条路，形成感觉记忆，并根据是否被攻击决定是否启动学习
+        if perception_result:
+            Robot.sensory_memory(perception_result)
+
+            # 被攻击后启动学习
+            hurt_result = Robot.hurt(robot, hunter)
+            if hurt_result:
+                Robot.learning()
+                return True
+
+        # 信息流动的第二条路，提取恐惧记忆，并根据预测结果做出行为
+        if perception_result:
+            remember_result = Robot.remember(perception_result)  # 提取记忆
+            if remember_result >= 1:  # 预测，做出行为
+                Robot.run(robot)
+                return True
+
 
 # 危险物模块
 class Hunter:
@@ -152,26 +173,11 @@ class Hunter:
 
 # 开始按钮
 def start(robot, hunter):
-    print('恐惧记忆：', Robot.FEAR_MEMORY)
+    print('fear_memory：', Robot.FEAR_MEMORY)
     while True:
-        perception_result = Robot.perception(robot, hunter)  # 感知到的信息
-
-        # 信息流动的第一条路，形成感觉记忆，并根据是否被攻击决定是否启动学习
-        if perception_result:
-            Robot.sensory_memory(perception_result)
-
-            # 被攻击后启动学习
-            hurt_result = Robot.hurt(robot, hunter)
-            if hurt_result:
-                Robot.learning()
-                break
-
-        # 信息流动的第二条路，提取恐惧记忆，并根据预测结果做出行为
-        if perception_result:
-            remember_result = Robot.remember(perception_result)  # 提取记忆
-            if remember_result >= 1:  # 预测，做出行为
-                Robot.run(robot)
-                break
+        end = Robot.brain(robot, hunter)
+        if end:
+            break
 
         Hunter.move(hunter_1)
         display()
